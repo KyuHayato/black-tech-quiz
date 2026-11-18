@@ -1,0 +1,2160 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Black Tech Quiz</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Bootstrap 5.3 CSS & Icons via CDN -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- ==========================================================================
+         1. CAMADA DE ESTRUTURA (HTML NO INÍCIO DO ARQUIVO)
+         FUTURA MIGRAÇÃO VUE.JS:
+         - `<AppNavbar>`: Barra superior com navegação entre views.
+         - `<QuizView>`: Componente principal do jogo (Cadastro, Pergunta, Feedback, Resultado).
+         - `<DashboardView>`: Ranking, Pódio dos 3 melhores grupos e Gráficos Chart.js.
+         - `<QuestionsView>`: Listagem e cadastro de perguntas com filter() e find().
+         - `<ReportModal>`: Relatório consolidado para avaliação e exportação.
+         ========================================================================== -->
+
+    <!-- COMPONENTE FUTURO: <AppNavbar /> -->
+    <nav class="navbar navbar-expand-md app-navbar sticky-top no-print py-2">
+      <div class="container">
+        <a
+          class="navbar-brand d-flex align-items-center gap-2 fw-bold text-dark"
+          href="#"
+          onclick="
+            mudarTela('quiz');
+            return false;
+          "
+        >
+          <span class="brand-logo"
+            ><i class="bi bi-lightning-charge-fill"></i
+          ></span>
+          <span>Black Tech Quiz</span>
+        </a>
+
+        <button
+          class="navbar-toggler border-0"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navMenu"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div
+          class="collapse navbar-collapse justify-content-end mt-2 mt-md-0"
+          id="navMenu"
+        >
+          <ul class="nav nav-pills align-items-center gap-1">
+            <li class="nav-item">
+              <button
+                class="nav-link active"
+                id="nav-quiz"
+                onclick="mudarTela('quiz')"
+              >
+                <i class="bi bi-play-circle me-1"></i> Quiz
+              </button>
+            </li>
+            <li class="nav-item">
+              <button
+                class="nav-link"
+                id="nav-dashboard"
+                onclick="mudarTela('dashboard')"
+              >
+                <i class="bi bi-trophy me-1"></i> Ranking & Gráficos
+              </button>
+            </li>
+            <li class="nav-item">
+              <button
+                class="nav-link"
+                id="nav-perguntas"
+                onclick="mudarTela('perguntas')"
+              >
+                <i class="bi bi-collection me-1"></i> Perguntas
+              </button>
+            </li>
+            <li class="nav-item ms-md-2">
+              <button
+                class="btn btn-sm btn-outline-dark fw-semibold rounded-3 px-3 py-2"
+                onclick="gerarRelatorio()"
+              >
+                <i class="bi bi-file-earmark-text me-1"></i> Gerar Relatório
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Notificação Discreta (Toast) -->
+    <div class="container mt-3 no-print" style="max-width: 650px">
+      <div
+        id="app-toast"
+        class="alert alert-dark border-0 shadow-sm rounded-3 py-2 px-3 d-none align-items-center justify-content-between small"
+        role="alert"
+      >
+        <span id="app-toast-msg">Notificação</span>
+        <button
+          type="button"
+          class="btn-close btn-close-sm"
+          onclick="ocultarNotificacao()"
+        ></button>
+      </div>
+    </div>
+
+    <main class="container my-4 flex-grow-1">
+      <!-- ======================================================================
+             COMPONENTE FUTURO: <QuizView />
+             Card centralizado e minimalista (Cadastro -> Perguntas -> Resultado)
+             ====================================================================== -->
+      <section id="tela-quiz" class="quiz-wrapper">
+        <!-- ETAPA 1: CADASTRO DO PARTICIPANTE -->
+        <div id="etapa-cadastro" class="clean-card p-4 p-md-5">
+          <div class="text-center mb-4">
+            <span
+              class="badge rounded-pill px-3 py-2 mb-2"
+              style="
+                background-color: var(--bt-primary-soft);
+                color: var(--bt-primary);
+              "
+            >
+              Mostra Black Tech
+            </span>
+            <h2 class="fw-bold mb-1">Black Tech Quiz</h2>
+            <p class="text-muted small mb-0">
+              Personalidades negras na ciência, tecnologia, engenharia e
+              computação.
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <label for="campo-grupo" class="form-label fw-semibold small"
+              >Nome do Grupo ou Participante</label
+            >
+            <input
+              type="text"
+              id="campo-grupo"
+              class="form-control form-control-lg rounded-3"
+              placeholder="Ex: Grupo Inovação"
+            />
+            <div id="msg-erro-grupo" class="text-danger small mt-1 d-none">
+              Informe o nome do grupo para começar.
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="campo-turma" class="form-label fw-semibold small"
+              >Turma</label
+            >
+            <select
+              id="campo-turma"
+              class="form-select form-select-lg rounded-3"
+            >
+              <option value="">Selecione sua turma...</option>
+              <option value="1º Ano A">1º Ano A</option>
+              <option value="1º Ano B">1º Ano B</option>
+              <option value="2º Ano A">2º Ano A</option>
+              <option value="2º Ano B">2º Ano B</option>
+              <option value="3º Ano A">3º Ano A</option>
+              <option value="3º Ano B">3º Ano B</option>
+            </select>
+            <div id="msg-erro-turma" class="text-danger small mt-1 d-none">
+              Selecione uma turma válida.
+            </div>
+          </div>
+
+          <!-- Switch discreto para modo prompt() ou Interface Clean -->
+          <div
+            class="d-flex justify-content-between align-items-center p-3 rounded-3 bg-light mb-4 visually-hidden"
+          >
+            <label
+              class="form-check-label small text-muted"
+              for="switch-modo-prompt"
+            >
+              Usar entrada via <code>prompt()</code> clássico
+            </label>
+            <div class="form-check form-switch mb-0">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                id="switch-modo-prompt"
+              />
+            </div>
+          </div>
+
+          <div class="d-grid">
+            <button
+              class="btn btn-bt-primary btn-lg"
+              onclick="cadastrarParticipante()"
+            >
+              Iniciar Quiz <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ETAPA 2: RODADA DE 5 PERGUNTAS -->
+        <div id="etapa-pergunta" class="clean-card p-4 p-md-5 d-none">
+          <!-- Barra Superior de Status -->
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small fw-bold text-muted" id="texto-contador-pergunta"
+              >Pergunta 1 de 5</span
+            >
+            <div class="d-flex align-items-center gap-3">
+              <span class="small text-muted">
+                <i class="bi bi-clock me-1"></i><span id="visor-tempo">0</span>s
+              </span>
+              <span
+                class="badge rounded-pill px-3 py-2"
+                style="background-color: var(--bt-primary)"
+              >
+                <span id="visor-pontos">0</span> pts
+              </span>
+            </div>
+          </div>
+
+          <!-- Barra de Progresso Fina -->
+          <div class="progress mb-4" style="height: 6px">
+            <div
+              id="barra-progresso"
+              class="progress-bar"
+              role="progressbar"
+              style="width: 20%; background-color: var(--bt-primary)"
+            ></div>
+          </div>
+
+          <!-- Enunciado da Pergunta -->
+          <div class="mb-4">
+            <span
+              class="badge bg-light text-dark border mb-2 fw-medium"
+              id="tag-personalidade"
+              >Personalidade</span
+            >
+            <h4 class="fw-bold mb-0" id="texto-pergunta">
+              Enunciado da pergunta?
+            </h4>
+          </div>
+
+          <!-- Alternativas 1 a 4 -->
+          <div id="container-alternativas" class="mb-3"></div>
+
+          <!-- Card Limpo de Feedback Educativo -->
+          <div id="box-feedback" class="p-3 rounded-3 border mt-3 d-none">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <strong id="feedback-status">Parabéns! Você acertou!</strong>
+              <span class="badge bg-dark" id="feedback-pontos-questao"
+                >+300 pts</span
+              >
+            </div>
+            <p class="small text-muted mb-3" id="feedback-texto-explicacao"></p>
+            <div class="d-grid">
+              <button
+                id="btn-avancar"
+                class="btn btn-dark fw-semibold rounded-3"
+                onclick="proximaPergunta()"
+              >
+                Próxima Pergunta
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ETAPA 3: RESULTADO FINAL (Layout Fiel à Página 6 do PDF) -->
+        <div id="etapa-resultado" class="d-none">
+          <div class="final-result-card mb-4">
+            <div class="final-result-header">
+              BLACK TECH QUIZ - Quiz Finalizado
+            </div>
+
+            <div class="p-4">
+              <!-- Selo Roxo Central -->
+              <div class="seal-container">
+                <div class="seal-outer">
+                  <div class="seal-inner">
+                    <span class="seal-points" id="final-pontos">750</span>
+                    <span class="seal-label">pontos</span>
+                  </div>
+                  <div class="seal-ribbon">Resultado demonstrativo</div>
+                </div>
+              </div>
+
+              <!-- Participante e Turma -->
+              <div class="outlined-box mb-3">
+                <div class="mb-1">
+                  <strong>Participante:</strong>
+                  <span id="final-grupo">Grupo Inovação</span>
+                </div>
+                <div>
+                  <strong>Turma:</strong> <span id="final-turma">2º Ano B</span>
+                </div>
+              </div>
+
+              <!-- 3 Mini-cards: Acertos, Erros e Aproveitamento -->
+              <div class="row g-2 text-center">
+                <div class="col-4">
+                  <div class="outlined-box py-3">
+                    <i class="bi bi-check-circle-fill d-block mb-1"></i>
+                    <div class="fs-3 fw-bold lh-1" id="final-acertos">4</div>
+                    <small class="text-muted">Acertos</small>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="outlined-box py-3">
+                    <i class="bi bi-x-circle-fill d-block mb-1"></i>
+                    <div class="fs-3 fw-bold lh-1" id="final-erros">1</div>
+                    <small class="text-muted">Erro</small>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="outlined-box py-3">
+                    <i class="bi bi-clock-fill d-block mb-1"></i>
+                    <div class="fs-3 fw-bold lh-1" id="final-aproveitamento">
+                      80%
+                    </div>
+                    <small class="text-muted">Aproveitamento</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Citação com Mensagem Educativa Personalizada -->
+              <div class="quote-box">
+                <span class="quote-symbol-top">“</span>
+                <p
+                  class="fw-semibold mb-2 text-dark small"
+                  id="final-mensagem-desempenho"
+                ></p>
+                <p class="mb-0 small text-muted">
+                  A história da tecnologia também foi construída por homens e
+                  mulheres negros. Conhecer suas contribuições é reconhecer que
+                  a inovação nasce da diversidade de talentos, ideias e
+                  oportunidades.
+                </p>
+                <span class="quote-symbol-bottom">”</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-center gap-2">
+            <button
+              class="btn btn-bt-primary px-4"
+              onclick="voltarAoCadastro()"
+            >
+              <i class="bi bi-arrow-repeat me-1"></i> Jogar Novamente
+            </button>
+            <button
+              class="btn btn-outline-dark fw-semibold rounded-3 px-4"
+              onclick="mudarTela('dashboard')"
+            >
+              <i class="bi bi-trophy me-1"></i> Ver Ranking
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================================
+             COMPONENTE FUTURO: <DashboardView />
+             Pódio dos 3 Grupos, Turma com mais acertos e Gráficos Chart.js
+             ====================================================================== -->
+      <section id="tela-dashboard" class="d-none">
+        <!-- Cards de Destaque no Topo -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="clean-card p-3 h-100">
+              <span class="text-muted small d-block"
+                >Turma que Mais Acertou</span
+              >
+              <h4 class="fw-bold mb-0 mt-1" id="dash-melhor-turma">-</h4>
+              <small
+                class="text-success fw-semibold"
+                id="dash-melhor-turma-detalhe"
+                >0 acertos</small
+              >
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="clean-card p-3 h-100">
+              <span class="text-muted small d-block">Maior Pontuação</span>
+              <h4 class="fw-bold mb-0 mt-1" id="dash-maior-pontuacao">0 pts</h4>
+              <small class="text-muted" id="dash-maior-grupo">-</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="clean-card p-3 h-100">
+              <span class="text-muted small d-block">Total de Grupos</span>
+              <h4 class="fw-bold mb-0 mt-1" id="dash-total-grupos">0</h4>
+              <small class="text-muted">Participações salvas</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pódio Clean dos 3 Melhores Grupos -->
+        <div class="clean-card p-4 mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Pódio — Top 3 Grupos</h5>
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              onclick="resetarHistoricoDemo()"
+            >
+              Restaurar Demo
+            </button>
+          </div>
+          <div id="podium-area" class="podium-grid"></div>
+        </div>
+
+        <!-- Dois Gráficos Chart.js -->
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <div class="clean-card p-4 h-100">
+              <h6 class="fw-bold mb-3">Pontuação por Grupo</h6>
+              <div style="height: 250px">
+                <canvas id="graficoGrupos"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="clean-card p-4 h-100">
+              <h6 class="fw-bold mb-3">Acertos Acumulados por Turma</h6>
+              <div style="height: 250px">
+                <canvas id="graficoTurmas"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================================
+             COMPONENTE FUTURO: <QuestionsView />
+             Filtro por personalidade (filter), busca por ID (find) e cadastro (push)
+             ====================================================================== -->
+      <section id="tela-perguntas" class="d-none">
+        <div class="clean-card p-4">
+          <div
+            class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4"
+          >
+            <div>
+              <h5 class="fw-bold mb-0">Banco de Perguntas</h5>
+              <small class="text-muted" id="contador-banco-perguntas"
+                >15 perguntas cadastradas</small
+              >
+            </div>
+            <button
+              class="btn btn-bt-primary btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#modalNovaPergunta"
+            >
+              <i class="bi bi-plus-lg me-1"></i> Nova Pergunta
+            </button>
+          </div>
+
+          <!-- Filtros: filter() por personalidade e find() por ID -->
+          <div class="row g-2 mb-4">
+            <div class="col-sm-8">
+              <input
+                type="text"
+                id="input-filtro-personalidade"
+                class="form-control"
+                placeholder="Filtrar por personalidade..."
+                oninput="atualizarListaPerguntas()"
+              />
+            </div>
+            <div class="col-sm-4">
+              <input
+                type="number"
+                id="input-busca-id"
+                class="form-control"
+                placeholder="Buscar por ID (ex: 1)"
+                min="1"
+                oninput="localizarPerguntaPorId()"
+              />
+            </div>
+          </div>
+
+          <!-- Alerta de Busca por ID (find) -->
+          <div
+            id="alerta-busca-id"
+            class="alert alert-light border small d-none mb-3"
+          ></div>
+
+          <!-- Lista de Perguntas -->
+          <div id="grid-perguntas" class="row g-3"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ==========================================================================
+         MODAL DE CADASTRO DE NOVA PERGUNTA (Salva no localStorage com push)
+         ========================================================================== -->
+    <div
+      class="modal fade"
+      id="modalNovaPergunta"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4">
+          <div class="modal-header border-bottom-0 pb-0">
+            <h5 class="modal-title fw-bold">Cadastrar Pergunta</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Personalidade</label>
+              <input
+                type="text"
+                id="form-personalidade"
+                class="form-control"
+                placeholder="Ex: Sônia Guimarães"
+              />
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Pergunta</label>
+              <textarea
+                id="form-pergunta"
+                class="form-control"
+                rows="2"
+              ></textarea>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <input
+                  type="text"
+                  id="form-alt-0"
+                  class="form-control form-control-sm"
+                  placeholder="Alternativa 1"
+                />
+              </div>
+              <div class="col-6">
+                <input
+                  type="text"
+                  id="form-alt-1"
+                  class="form-control form-control-sm"
+                  placeholder="Alternativa 2"
+                />
+              </div>
+              <div class="col-6">
+                <input
+                  type="text"
+                  id="form-alt-2"
+                  class="form-control form-control-sm"
+                  placeholder="Alternativa 3"
+                />
+              </div>
+              <div class="col-6">
+                <input
+                  type="text"
+                  id="form-alt-3"
+                  class="form-control form-control-sm"
+                  placeholder="Alternativa 4"
+                />
+              </div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold"
+                >Alternativa Correta</label
+              >
+              <select id="form-correta" class="form-select form-select-sm">
+                <option value="0">Alternativa 1</option>
+                <option value="1">Alternativa 2</option>
+                <option value="2">Alternativa 3</option>
+                <option value="3">Alternativa 4</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold"
+                >Explicação Educativa</label
+              >
+              <textarea
+                id="form-explicacao"
+                class="form-control"
+                rows="2"
+              ></textarea>
+            </div>
+            <div class="d-grid">
+              <button class="btn btn-bt-primary" onclick="salvarNovaPergunta()">
+                Salvar no Banco
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         COMPONENTE FUTURO: <ReportModal />
+         Modal Limpo de Relatório Estatístico e Exportação (gerarRelatorio)
+         ========================================================================== -->
+    <div
+      class="modal fade"
+      id="modalRelatorio"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div
+        class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"
+      >
+        <div class="modal-content border-0 rounded-4">
+          <div class="modal-header">
+            <div>
+              <h5 class="modal-title fw-bold mb-0">
+                Relatório de Desempenho — Black Tech Quiz
+              </h5>
+              <small class="text-muted" id="relatorio-data"></small>
+            </div>
+            <button
+              type="button"
+              class="btn-close no-print"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <!-- Resumo Estatístico -->
+            <div class="row g-2 mb-4 text-center">
+              <div class="col-4">
+                <div class="p-3 rounded-3 bg-light">
+                  <small class="text-muted d-block">Melhor Grupo</small>
+                  <strong id="rel-melhor-grupo">-</strong>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="p-3 rounded-3 bg-light">
+                  <small class="text-muted d-block">Turma Líder</small>
+                  <strong id="rel-melhor-turma">-</strong>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="p-3 rounded-3 bg-light">
+                  <small class="text-muted d-block">Média Geral</small>
+                  <strong id="rel-media-geral">0%</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabela Completa -->
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Grupo</th>
+                    <th>Turma</th>
+                    <th class="text-center">Acertos</th>
+                    <th class="text-center">Aproveitamento</th>
+                    <th class="text-center">Tempo Médio</th>
+                    <th class="text-end">Pontuação</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-relatorio-corpo"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer no-print">
+            <button
+              class="btn btn-outline-success btn-sm fw-semibold"
+              onclick="exportarCSV()"
+            >
+              <i class="bi bi-filetype-csv me-1"></i> Exportar CSV
+            </button>
+            <button class="btn btn-bt-primary btn-sm" onclick="window.print()">
+              <i class="bi bi-printer me-1"></i> Imprimir / Salvar PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts Bootstrap e Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- ==========================================================================
+         3. CAMADA DE LÓGICA E DADOS (JAVASCRIPT NO FINAL DO ARQUIVO)
+         ESTRUTURA PREPARADA PARA MIGRAÇÃO VUE.JS 3 (Composition API):
+         - [STATE / REF]: Variáveis reativas do quiz e dados sincronizados com localStorage.
+         - [COMPUTED]: Cálculos derivados para o pódio, estatísticas de turmas e filtros.
+         - [METHODS]: Funções obrigatórias do documento de requisitos.
+         - [LIFECYCLE - onMounted]: Inicialização dos dados ao carregar a página.
+         ========================================================================== -->
+    <script>
+      /* ========================================================================
+           1. BANCO DE PERGUNTAS INICIAL (15 Personalidades Negras na Ciência/Tech)
+           Em Vue.js: Movido para um módulo `src/data/perguntasIniciais.js` ou Store Pinia.
+           ======================================================================== */
+      const STORAGE_KEY_PERGUNTAS = "blacktech_perguntas";
+      const STORAGE_KEY_RESULTADOS = "blacktech_resultados";
+
+      const BANCO_PERGUNTAS_PADRAO = [
+        {
+          id: 1,
+          pergunta: "Quem foi Katherine Johnson?",
+          alternativas: [
+            "Uma engenheira de videogames",
+            "Uma matemática da NASA",
+            "Uma inventora de microfones",
+            "Uma cientista da computação brasileira",
+          ],
+          respostaCorreta: 1,
+          personalidade: "Katherine Johnson",
+          explicacao:
+            "Seus cálculos de trajetórias orbitais foram fundamentais para o sucesso das missões espaciais tripuladas da NASA, incluindo a Apollo 11.",
+        },
+        {
+          id: 2,
+          pergunta:
+            "Qual foi a principal contribuição do engenheiro Mark Dean na IBM?",
+          alternativas: [
+            "Criou o primeiro navegador da internet",
+            "Co-criou o computador pessoal IBM PC e liderou o chip de 1 GHz",
+            "Desenvolveu a linguagem de programação Java",
+            "Inventou o armazenamento em nuvem",
+          ],
+          respostaCorreta: 1,
+          personalidade: "Mark Dean",
+          explicacao:
+            "Mark Dean detém três das nove patentes originais do IBM PC e liderou a equipe que criou o primeiro processador de 1 Gigahertz.",
+        },
+        {
+          id: 3,
+          pergunta:
+            "O trabalho matemático de Gladys West permitiu o desenvolvimento de qual tecnologia?",
+          alternativas: [
+            "Sistema de Posicionamento Global (GPS)",
+            "Rede sem fio Wi-Fi",
+            "Fibra óptica submarina",
+            "Monitores de cristal líquido",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Gladys West",
+          explicacao:
+            "Gladys West programou computadores para calcular com precisão o modelo geodésico da Terra, base essencial para o funcionamento do GPS.",
+        },
+        {
+          id: 4,
+          pergunta:
+            "Annie Easley desenvolveu códigos na NASA voltados para qual área tecnológica?",
+          alternativas: [
+            "Sistemas de conversão de energia e o foguete Centaur",
+            "Design de satélites de televisão",
+            "Protocolos de correio eletrônico",
+            "Compiladores para computadores domésticos",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Annie Easley",
+          explicacao:
+            "Cientista da computação e matemática, Annie Easley escreveu softwares para análise de energia alternativa e controle do estágio de foguetes Centaur.",
+        },
+        {
+          id: 5,
+          pergunta:
+            "Clarence 'Skip' Ellis entrou para a história da computação por ser:",
+          alternativas: [
+            "O primeiro afro-americano com PhD em Ciência da Computação e pioneiro em Groupware",
+            "O fundador da primeira empresa de cabos de rede",
+            "O criador do código binário moderno",
+            "O inventor do teclado mecânico",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Clarence Ellis",
+          explicacao:
+            "No Xerox PARC, Clarence Ellis foi pioneiro em sistemas colaborativos em tempo real (como a edição simultânea de documentos) e interfaces baseadas em ícones.",
+        },
+        {
+          id: 6,
+          pergunta:
+            "Qual invenção óptica foi patenteada pela cientista da NASA Valerie Thomas em 1980?",
+          alternativas: [
+            "O Transmissor de Ilusão (base para imagens 3D)",
+            "O leitor de CD a laser",
+            "A câmera termográfica infravermelha",
+            "O telescópio de refração digital",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Valerie Thomas",
+          explicacao:
+            "Valerie Thomas criou o Transmissor de Ilusão utilizando espelhos côncavos para projetar imagens tridimensionais, além de atuar no projeto Landsat.",
+        },
+        {
+          id: 7,
+          pergunta:
+            "Como o engenheiro Jerry Lawson transformou a indústria de videogames nos anos 1970?",
+          alternativas: [
+            "Criou o primeiro console doméstico com cartuchos de jogos intercambiáveis",
+            "Desenvolveu o primeiro controle sem fio por Bluetooth",
+            "Criou o primeiro capacete de realidade virtual",
+            "Projetou a primeira máquina de fliperama a laser",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Jerry Lawson",
+          explicacao:
+            "Ao liderar o projeto do console Fairchild Channel F, Jerry Lawson permitiu que jogadores trocassem de jogo usando cartuchos ROM.",
+        },
+        {
+          id: 8,
+          pergunta:
+            "O que Marie Van Brittan Brown inventou em 1966 para aumentar a segurança residencial?",
+          alternativas: [
+            "O primeiro sistema doméstico de segurança por vídeo (CCTV) e interfone",
+            "A fechadura biométrica por impressão digital",
+            "O sensor de fumaça conectado à rede elétrica",
+            "O alarme automotivo por ultrassom",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Marie Van Brittan Brown",
+          explicacao:
+            "Sua patente introduziu câmeras motorizadas, monitor de vídeo na residência, comunicação por voz e abertura remota da porta.",
+        },
+        {
+          id: 9,
+          pergunta:
+            "Por qual conquista em supercomputação Philip Emeagwali venceu o Prêmio Gordon Bell em 1989?",
+          alternativas: [
+            "Usou 65.536 processadores em paralelo para atingir 3,1 bilhões de cálculos por segundo",
+            "Criou o primeiro computador quântico comercial",
+            "Desenvolveu a primeira memória RAM de 1 Terabyte",
+            "Projetou o primeiro cabo transatlântico de internet",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Philip Emeagwali",
+          explicacao:
+            "O cientista nigeriano provou a eficiência do processamento massivamente paralelo para resolver problemas complexos da física e engenharia.",
+        },
+        {
+          id: 10,
+          pergunta:
+            "Qual organização internacional foi fundada pela engenheira Kimberly Bryant em 2011?",
+          alternativas: [
+            "Black Girls CODE",
+            "Women in Hardware",
+            "Silicon Valley Alliance",
+            "Code.org Global",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Kimberly Bryant",
+          explicacao:
+            "A Black Girls CODE capacita milhares de jovens negras em programação, robótica e inteligência artificial.",
+        },
+        {
+          id: 11,
+          pergunta:
+            "Conhecido como o 'Padrinho do Vale do Silício', Roy Clay Sr. liderou qual marco na HP?",
+          alternativas: [
+            "A criação da divisão de computadores da Hewlett-Packard e o minicomputador HP 2116A",
+            "A fabricação das primeiras calculadoras solares de bolso",
+            "O desenvolvimento da linguagem C++",
+            "A invenção do disco flexível (disquete)",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Roy Clay Sr.",
+          explicacao:
+            "Roy Clay Sr. estruturou a área de P&D de computadores da HP nos anos 1960 e abriu espaço para profissionais negros no Vale do Silício.",
+        },
+        {
+          id: 12,
+          pergunta:
+            "Evelyn Boyd Granville, uma das primeiras mulheres negras doutoras em Matemática nos EUA, trabalhou em:",
+          alternativas: [
+            "Programas em IBM 650 para cálculos de trajetórias dos projetos espaciais Vanguard e Mercury",
+            "Sistemas de radar para submarinos nucleares",
+            "Criptografia bancária para caixas eletrônicos",
+            "Redes de telefonia móvel celular",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Evelyn Boyd Granville",
+          explicacao:
+            "Contratada pela IBM nos anos 1950, Evelyn desenvolveu softwares científicos em tempo real para a agência espacial norte-americana.",
+        },
+        {
+          id: 13,
+          pergunta:
+            "As mais de 25 patentes do inventor Otis Boykin em resistores eletrônicos tornaram possíveis:",
+          alternativas: [
+            "O controle preciso do marca-passo cardíaco e computadores mais confiáveis",
+            "A transmissão de rádio em frequência modulada (FM)",
+            "As primeiras lâmpadas de LED brancas",
+            "Os motores elétricos de trens de alta velocidade",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Otis Boykin",
+          explicacao:
+            "Seus resistores de alta precisão reduziram custos de produção de computadores e salvaram milhões de vidas em marca-passos cardíacos.",
+        },
+        {
+          id: 14,
+          pergunta:
+            "Marian Croak possui mais de 200 patentes e foi peça-chave para o desenvolvimento de qual tecnologia?",
+          alternativas: [
+            "Transmissão de voz sobre protocolo de internet (VoIP)",
+            "Armazenamento em discos de estado sólido (SSD)",
+            "Baterias de carregamento ultrarrápido",
+            "Monitores curvos de alta definição",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Marian Croak",
+          explicacao:
+            "O trabalho pioneiro de Marian Croak em VoIP permitiu chamadas de voz e videoconferências digitais pela internet.",
+        },
+        {
+          id: 15,
+          pergunta:
+            "Qual o marco histórico da cientista brasileira Sônia Guimarães na física e educação tecnológica?",
+          alternativas: [
+            "Primeira mulher negra brasileira doutora em Física e primeira professora negra do ITA",
+            "Fundadora do primeiro laboratório de robótica da USP",
+            "Criadora do primeiro satélite meteorológico nacional",
+            "Desenvolvedora do sistema brasileiro de TV digital",
+          ],
+          respostaCorreta: 0,
+          personalidade: "Sônia Guimarães",
+          explicacao:
+            "Especialista em semicondutores e sensores infravermelhos, Sônia Guimarães ingressou como docente no ITA em 1993.",
+        },
+      ];
+
+    //   const RESULTADOS_INICIAIS_DEMO = [
+    //     {
+    //       id: 1,
+    //       nomeGrupo: "Grupo Inovação",
+    //       turma: "2º Ano B",
+    //       pontuacao: 750,
+    //       acertos: 4,
+    //       erros: 1,
+    //       aproveitamento: 80,
+    //       tempoMedio: 7,
+    //       data: "18/11/2026",
+    //     },
+    //     {
+    //       id: 2,
+    //       nomeGrupo: "Equipe Wakanda",
+    //       turma: "3º Ano A",
+    //       pontuacao: 1150,
+    //       acertos: 5,
+    //       erros: 0,
+    //       aproveitamento: 100,
+    //       tempoMedio: 5,
+    //       data: "18/11/2026",
+    //     },
+    //     {
+    //       id: 3,
+    //       nomeGrupo: "Pioneiros Tech",
+    //       turma: "1º Ano A",
+    //       pontuacao: 600,
+    //       acertos: 3,
+    //       erros: 2,
+    //       aproveitamento: 60,
+    //       tempoMedio: 9,
+    //       data: "18/11/2026",
+    //     },
+    //   ];
+
+      /* ========================================================================
+           2. [STATE / REF] — VARIÁVEIS DE CONTROLE DO QUIZ (RF06)
+           Em Vue.js: Serão convertidas em `ref()` ou `reactive()`.
+           ======================================================================== */
+      let perguntas = [];
+      let resultadosHistorico = [];
+
+      // Variáveis obrigatórias sugeridas no documento (RF06)
+      let pontuacao = 0;
+      let acertos = 0;
+      let erros = 0;
+      let numeroPergunta = 0;
+
+      // Estado da partida atual
+      let nomeGrupo = "";
+      let turma = "";
+      let usarPromptClassico = false;
+      let perguntasDaRodada = [];
+      let temposRespostas = [];
+      let cronometroId = null;
+      let segundosQuestao = 0;
+      let questaoBloqueada = false;
+
+      // Instâncias dos gráficos Chart.js
+      let graficoGruposInstancia = null;
+      let graficoTurmasInstancia = null;
+
+      /* ========================================================================
+           3. PERSISTÊNCIA NO LOCALSTORAGE
+           Em Vue.js: Sincronizado via `watch()` ou plugin Pinia PersistedState.
+           ======================================================================== */
+      const inicializarLocalStorage = () => {
+        const perguntasSalvas = localStorage.getItem(STORAGE_KEY_PERGUNTAS);
+        if (perguntasSalvas) {
+          perguntas = JSON.parse(perguntasSalvas);
+        } else {
+          perguntas = [...BANCO_PERGUNTAS_PADRAO];
+          localStorage.setItem(
+            STORAGE_KEY_PERGUNTAS,
+            JSON.stringify(perguntas),
+          );
+        }
+
+        const resultadosSalvos = localStorage.getItem(STORAGE_KEY_RESULTADOS);
+        if (resultadosSalvos) {
+          resultadosHistorico = JSON.parse(resultadosSalvos);
+        } else {
+          resultadosHistorico = [...RESULTADOS_INICIAIS_DEMO];
+          localStorage.setItem(
+            STORAGE_KEY_RESULTADOS,
+            JSON.stringify(resultadosHistorico),
+          );
+        }
+      };
+
+      const salvarPerguntasStorage = () => {
+        localStorage.setItem(STORAGE_KEY_PERGUNTAS, JSON.stringify(perguntas));
+      };
+
+      const salvarResultadosStorage = () => {
+        localStorage.setItem(
+          STORAGE_KEY_RESULTADOS,
+          JSON.stringify(resultadosHistorico),
+        );
+      };
+
+      const exibirNotificacao = (mensagem) => {
+        const toast = document.getElementById("app-toast");
+        const texto = document.getElementById("app-toast-msg");
+        if (toast && texto) {
+          texto.textContent = mensagem;
+          toast.classList.remove("d-none");
+          toast.classList.add("d-flex");
+          setTimeout(() => ocultarNotificacao(), 3500);
+        }
+      };
+
+      const ocultarNotificacao = () => {
+        const toast = document.getElementById("app-toast");
+        if (toast) {
+          toast.classList.add("d-none");
+          toast.classList.remove("d-flex");
+        }
+      };
+
+      /* ========================================================================
+           4. [METHODS] — FUNÇÕES OBRIGATÓRIAS DO PROJETO (Seção 5 do Documento)
+           ======================================================================== */
+
+      /**
+       * validarEntrada()
+       * Verifica se os textos informados, opções (1 a 4) ou tempos são válidos.
+       */
+      function validarEntrada(valor, tipo = "texto") {
+        if (tipo === "texto") {
+          return typeof valor === "string" && valor.trim().length > 0;
+        }
+        if (tipo === "resposta") {
+          const num = Number(valor);
+          return Number.isInteger(num) && num >= 1 && num <= 4;
+        }
+        if (tipo === "tempo") {
+          const num = Number(valor);
+          return !Number.isNaN(num) && num > 0;
+        }
+        return false;
+      }
+
+      /**
+       * cadastrarParticipante() - RF02
+       * Valida nome do grupo e turma (via interface clean ou prompt clássico).
+       */
+      function cadastrarParticipante() {
+        usarPromptClassico =
+          document.getElementById("switch-modo-prompt").checked;
+
+        if (usarPromptClassico) {
+          // Laço while para validação de entrada quando o modo prompt() está ativo
+          let grupoPrompt = prompt("Digite o nome do seu grupo:");
+          if (grupoPrompt === null) return; // Tratamento caso o visitante cancele
+          while (!validarEntrada(grupoPrompt, "texto")) {
+            grupoPrompt = prompt("Nome inválido! Digite o nome do seu grupo:");
+            if (grupoPrompt === null) return;
+          }
+
+          let turmaPrompt = prompt("Informe sua turma (ex: 2º Ano B):");
+          if (turmaPrompt === null) return;
+          while (!validarEntrada(turmaPrompt, "texto")) {
+            turmaPrompt = prompt("Turma inválida! Informe sua turma:");
+            if (turmaPrompt === null) return;
+          }
+
+          nomeGrupo = grupoPrompt.trim();
+          turma = turmaPrompt.trim();
+        } else {
+          const inputGrupo = document.getElementById("campo-grupo").value;
+          const inputTurma = document.getElementById("campo-turma").value;
+
+          const grupoOk = validarEntrada(inputGrupo, "texto");
+          const turmaOk = validarEntrada(inputTurma, "texto");
+
+          document
+            .getElementById("msg-erro-grupo")
+            .classList.toggle("d-none", grupoOk);
+          document
+            .getElementById("msg-erro-turma")
+            .classList.toggle("d-none", turmaOk);
+
+          if (!grupoOk || !turmaOk) return;
+
+          nomeGrupo = inputGrupo.trim();
+          turma = inputTurma.trim();
+        }
+
+        // Logs obrigatórios no console do navegador (RF02)
+        console.log("Participante:", nomeGrupo);
+        console.log("Turma:", turma);
+
+        iniciarQuiz();
+      }
+
+      /**
+       * embaralharPerguntas() - RF03
+       * Randomiza o banco de perguntas usando laço `for` e seleciona 5 sem repetição.
+       */
+      function embaralharPerguntas(lista, total = 5) {
+        const copia = [...lista];
+        for (let i = copia.length - 1; i > 0; i--) {
+          const indiceAleatorio = Math.floor(Math.random() * (i + 1));
+          const temp = copia[i];
+          copia[i] = copia[indiceAleatorio];
+          copia[indiceAleatorio] = temp;
+        }
+        return copia.slice(0, total);
+      }
+
+      /**
+       * iniciarQuiz() - RF03 & RF06
+       * Reinicia os contadores e inicia a rodada de 5 perguntas.
+       */
+      function iniciarQuiz() {
+        pontuacao = 0;
+        acertos = 0;
+        erros = 0;
+        numeroPergunta = 0;
+        temposRespostas = [];
+        perguntasDaRodada = embaralharPerguntas(perguntas, 5);
+
+        console.log(
+          `=== Bem-vindo(a) ao Black Tech Quiz, ${nomeGrupo} (${turma})! ===`,
+        );
+
+        document.getElementById("etapa-cadastro").classList.add("d-none");
+        document.getElementById("etapa-resultado").classList.add("d-none");
+        document.getElementById("etapa-pergunta").classList.remove("d-none");
+
+        exibirPergunta();
+      }
+
+      /**
+       * exibirPergunta() - RF03
+       * Renderiza a pergunta atual e as 4 alternativas numeradas de 1 a 4.
+       */
+      function exibirPergunta() {
+        questaoBloqueada = false;
+        const atual = perguntasDaRodada[numeroPergunta];
+        const ordemHumana = numeroPergunta + 1;
+
+        document.getElementById("texto-contador-pergunta").textContent =
+          `Pergunta ${ordemHumana} de 5`;
+        document.getElementById("visor-pontos").textContent = pontuacao;
+        document.getElementById("barra-progresso").style.width =
+          `${(ordemHumana / 5) * 100}%`;
+        document.getElementById("tag-personalidade").textContent =
+          atual.personalidade;
+        document.getElementById("texto-pergunta").textContent = atual.pergunta;
+        document.getElementById("box-feedback").classList.add("d-none");
+
+        // Log no console percorrendo com `for...of` (Requisito Técnico)
+        console.log(`\nPergunta ${ordemHumana}: ${atual.pergunta}`);
+        let numAlt = 1;
+        for (const opcao of atual.alternativas) {
+          console.log(`${numAlt} - ${opcao}`);
+          numAlt++;
+        }
+
+        // Renderiza os 4 botões na tela usando `forEach()`
+        const container = document.getElementById("container-alternativas");
+        container.innerHTML = "";
+
+        atual.alternativas.forEach((textoOpcao, idx) => {
+          const numeroOpcao = idx + 1;
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "option-item";
+          btn.id = `opcao-btn-${idx}`;
+          btn.innerHTML = `
+                    <span class="option-badge">${numeroOpcao}</span>
+                    <span>${textoOpcao}</span>
+                `;
+          btn.onclick = () => responderViaInterface(numeroOpcao);
+          container.appendChild(btn);
+        });
+
+        iniciarCronometro();
+
+        // Caso o modo prompt() clássico esteja ativado, solicita a resposta e o tempo via prompt()
+        if (usarPromptClassico) {
+          setTimeout(() => solicitarRespostaViaPrompt(atual), 150);
+        }
+      }
+
+      function solicitarRespostaViaPrompt(perguntaObj) {
+        const textoPrompt =
+          `${perguntaObj.pergunta}\n\n` +
+          perguntaObj.alternativas
+            .map((alt, i) => `${i + 1} - ${alt}`)
+            .join("\n");
+
+        let entradaResp = prompt(textoPrompt);
+        if (entradaResp === null) return;
+
+        while (!validarEntrada(entradaResp, "resposta")) {
+          entradaResp = prompt(
+            `Opção inválida! Digite um número de 1 a 4:\n\n${textoPrompt}`,
+          );
+          if (entradaResp === null) return;
+        }
+
+        let entradaTempo = prompt(
+          "Quantos segundos você levou para responder?",
+        );
+        if (entradaTempo === null) entradaTempo = String(segundosQuestao || 5);
+
+        while (!validarEntrada(entradaTempo, "tempo")) {
+          entradaTempo = prompt(
+            "Tempo inválido! Informe os segundos gastos (ex: 5):",
+          );
+          if (entradaTempo === null) {
+            entradaTempo = "5";
+            break;
+          }
+        }
+
+        validarResposta(Number(entradaResp), Number(entradaTempo));
+      }
+
+      function iniciarCronometro() {
+        pararCronometro();
+        segundosQuestao = 0;
+        document.getElementById("visor-tempo").textContent = segundosQuestao;
+
+        cronometroId = setInterval(() => {
+          segundosQuestao++;
+          document.getElementById("visor-tempo").textContent = segundosQuestao;
+        }, 1000);
+      }
+
+      function pararCronometro() {
+        if (cronometroId) {
+          clearInterval(cronometroId);
+          cronometroId = null;
+        }
+      }
+
+      /**
+       * calcularMultiplicador() - RF05
+       * Retorna o multiplicador de tempo conforme a tabela de regras.
+       */
+      function calcularMultiplicador(segundos) {
+        if (segundos <= 5) return 3.0;
+        if (segundos <= 10) return 2.0;
+        if (segundos <= 15) return 1.5;
+        if (segundos <= 20) return 1.0;
+        return 0.5;
+      }
+
+      /**
+       * calcularPontuacao() - RF05
+       * Base de 100 pontos multiplicada pelo fator de tempo.
+       */
+      function calcularPontuacao(acertou, segundos) {
+        if (!acertou) return 0;
+        const base = 100;
+        return Math.round(base * calcularMultiplicador(segundos));
+      }
+
+      function responderViaInterface(numeroEscolhido) {
+        if (questaoBloqueada) return;
+        const tempoGasto = Math.max(1, segundosQuestao);
+        validarResposta(numeroEscolhido, tempoGasto);
+      }
+
+      /**
+       * validarResposta() - RF04 & RF07
+       * Verifica a alternativa escolhida (1 a 4), atualiza pontos e exibe feedback educativo.
+       */
+      function validarResposta(respostaNumero, tempoSegundos) {
+        if (questaoBloqueada || !validarEntrada(respostaNumero, "resposta"))
+          return;
+
+        questaoBloqueada = true;
+        pararCronometro();
+
+        const pergunta = perguntasDaRodada[numeroPergunta];
+        const indiceEscolhido = respostaNumero - 1;
+        const acertou = indiceEscolhido === pergunta.respostaCorreta;
+        const pontosObtidos = calcularPontuacao(acertou, tempoSegundos);
+
+        temposRespostas.push(tempoSegundos);
+
+        // Destaca visualmente os botões
+        pergunta.alternativas.forEach((_, idx) => {
+          const botao = document.getElementById(`opcao-btn-${idx}`);
+          if (botao) {
+            botao.disabled = true;
+            if (idx === pergunta.respostaCorreta) {
+              botao.classList.add("is-correct");
+            } else if (idx === indiceEscolhido && !acertou) {
+              botao.classList.add("is-wrong");
+            }
+          }
+        });
+
+        // Estrutura condicional e logs no console conforme RF07
+        if (respostaNumero - 1 === pergunta.respostaCorreta) {
+          acertos++;
+          pontuacao += pontosObtidos;
+          console.log("Parabéns! Você acertou!");
+          console.log(pergunta.explicacao);
+        } else {
+          erros++;
+          console.log("Não foi dessa vez!");
+          console.log(
+            "A resposta correta era: " +
+              pergunta.alternativas[pergunta.respostaCorreta],
+          );
+          console.log(pergunta.explicacao);
+        }
+
+        document.getElementById("visor-pontos").textContent = pontuacao;
+
+        // Exibe o card clean de feedback educativo
+        const boxFeedback = document.getElementById("box-feedback");
+        const statusEl = document.getElementById("feedback-status");
+        const badgePtsEl = document.getElementById("feedback-pontos-questao");
+        const explicacaoEl = document.getElementById(
+          "feedback-texto-explicacao",
+        );
+        const btnAvancar = document.getElementById("btn-avancar");
+
+        if (acertou) {
+          statusEl.textContent = "Parabéns! Você acertou!";
+          statusEl.className = "text-success";
+          badgePtsEl.textContent = `+${pontosObtidos} pts (${tempoSegundos}s)`;
+          badgePtsEl.className = "badge bg-success";
+        } else {
+          statusEl.textContent = "Não foi dessa vez!";
+          statusEl.className = "text-danger";
+          badgePtsEl.textContent = "0 pts";
+          badgePtsEl.className = "badge bg-secondary";
+        }
+
+        explicacaoEl.textContent = `${pergunta.personalidade} — ${pergunta.explicacao}`;
+        btnAvancar.textContent =
+          numeroPergunta + 1 === 5 ? "Ver Resultado Final" : "Próxima Pergunta";
+        boxFeedback.classList.remove("d-none");
+      }
+
+      function proximaPergunta() {
+        numeroPergunta++;
+        if (numeroPergunta < 5) {
+          exibirPergunta();
+        } else {
+          finalizarQuiz();
+        }
+      }
+
+      /**
+       * obterMensagem() - RF09
+       * Seleciona a mensagem educativa personalizada de acordo com a faixa de aproveitamento.
+       */
+      function obterMensagem(aproveitamento) {
+        if (aproveitamento === 100) {
+          return "Conhecimento extraordinário! Você mostrou que conhece grandes nomes que transformaram o mundo!";
+        } else if (aproveitamento >= 80) {
+          return "Excelente! Você demonstrou um ótimo conhecimento sobre a história da tecnologia.";
+        } else if (aproveitamento >= 60) {
+          return "Muito bem! Você reconhece importantes protagonistas da ciência e da inovação.";
+        } else if (aproveitamento >= 40) {
+          return "Você já conhece algumas contribuições importantes. Continue explorando a história da tecnologia!";
+        } else {
+          return "Sua jornada de descobertas está apenas começando! Continue conhecendo essas grandes personalidades.";
+        }
+      }
+
+      /**
+       * finalizarQuiz() - RF08
+       * Apresenta o resultado final, salva no localStorage com push() e registra no console.
+       */
+      function finalizarQuiz() {
+        pararCronometro();
+
+        const aproveitamento = Math.round((acertos / 5) * 100);
+        const mensagemEducativa = obterMensagem(aproveitamento);
+        const somaTempos = temposRespostas.reduce((acc, t) => acc + t, 0);
+        const tempoMedio =
+          temposRespostas.length > 0
+            ? Math.round(somaTempos / temposRespostas.length)
+            : 0;
+
+        // Preenche a tela final idêntica à Página 6 do PDF
+        document.getElementById("final-pontos").textContent = pontuacao;
+        document.getElementById("final-grupo").textContent = nomeGrupo;
+        document.getElementById("final-turma").textContent = turma;
+        document.getElementById("final-acertos").textContent = acertos;
+        document.getElementById("final-erros").textContent = erros;
+        document.getElementById("final-aproveitamento").textContent =
+          `${aproveitamento}%`;
+        document.getElementById("final-mensagem-desempenho").textContent =
+          mensagemEducativa;
+
+        // Salva a partida no localStorage usando push()
+        const novoResultado = {
+          id: Date.now(),
+          nomeGrupo: nomeGrupo,
+          turma: turma,
+          pontuacao: pontuacao,
+          acertos: acertos,
+          erros: erros,
+          aproveitamento: aproveitamento,
+          tempoMedio: tempoMedio,
+          data: new Date().toLocaleDateString("pt-BR"),
+        };
+
+        resultadosHistorico.push(novoResultado);
+        salvarResultadosStorage();
+
+        // Logs finais no console do navegador
+        console.log("\n=== BLACK TECH QUIZ - Quiz Finalizado ===");
+        console.log(`Participante: ${nomeGrupo} | Turma: ${turma}`);
+        console.log(
+          `Acertos: ${acertos} | Erros: ${erros} | Aproveitamento: ${aproveitamento}%`,
+        );
+        console.log(`Pontuação Total: ${pontuacao} pontos`);
+        console.log(`Mensagem: ${mensagemEducativa}`);
+
+        document.getElementById("etapa-pergunta").classList.add("d-none");
+        document.getElementById("etapa-resultado").classList.remove("d-none");
+      }
+
+      function voltarAoCadastro() {
+        document.getElementById("campo-grupo").value = "";
+        document.getElementById("etapa-resultado").classList.add("d-none");
+        document.getElementById("etapa-pergunta").classList.add("d-none");
+        document.getElementById("etapa-cadastro").classList.remove("d-none");
+      }
+
+      /* ========================================================================
+           5. [COMPUTED & DASHBOARD] — PÓDIO, ESTATÍSTICAS E GRÁFICOS
+           Em Vue.js: Propriedades `computed()` no componente `<DashboardView />`.
+           ======================================================================== */
+      function obterEstatisticasConsolidadas() {
+        const ordenados = [...resultadosHistorico].sort(
+          (a, b) => b.pontuacao - a.pontuacao,
+        );
+
+        const porTurma = {};
+        for (const item of resultadosHistorico) {
+          if (!porTurma[item.turma]) {
+            porTurma[item.turma] = {
+              turma: item.turma,
+              acertos: 0,
+              grupos: 0,
+              pontos: 0,
+            };
+          }
+          porTurma[item.turma].acertos += item.acertos;
+          porTurma[item.turma].grupos += 1;
+          porTurma[item.turma].pontos += item.pontuacao;
+        }
+
+        const turmasOrdenadas = Object.values(porTurma).sort(
+          (a, b) => b.acertos - a.acertos,
+        );
+        return { ordenados, turmasOrdenadas };
+      }
+
+      function renderizarDashboard() {
+        const { ordenados, turmasOrdenadas } = obterEstatisticasConsolidadas();
+
+        // Cards de Destaque
+        if (turmasOrdenadas.length > 0) {
+          document.getElementById("dash-melhor-turma").textContent =
+            turmasOrdenadas[0].turma;
+          document.getElementById("dash-melhor-turma-detalhe").textContent =
+            `${turmasOrdenadas[0].acertos} acertos acumulados`;
+        }
+        if (ordenados.length > 0) {
+          document.getElementById("dash-maior-pontuacao").textContent =
+            `${ordenados[0].pontuacao} pts`;
+          document.getElementById("dash-maior-grupo").textContent =
+            `${ordenados[0].nomeGrupo} (${ordenados[0].turma})`;
+        }
+        document.getElementById("dash-total-grupos").textContent =
+          resultadosHistorico.length;
+
+        // Pódio Minimalista (2º, 1º e 3º lugar)
+        const t1 = ordenados[0] || { nomeGrupo: "-", turma: "-", pontuacao: 0 };
+        const t2 = ordenados[1] || { nomeGrupo: "-", turma: "-", pontuacao: 0 };
+        const t3 = ordenados[2] || { nomeGrupo: "-", turma: "-", pontuacao: 0 };
+
+        document.getElementById("podium-area").innerHTML = `
+                <div class="podium-item">
+                    <div class="fw-semibold small text-truncate">${t2.nomeGrupo}</div>
+                    <small class="text-muted d-block mb-2">${t2.turma}</small>
+                    <div class="podium-bar podium-2">
+                        <span class="fw-bold">2º</span>
+                        <span class="fs-5 fw-bold">${t2.pontuacao} pts</span>
+                    </div>
+                </div>
+                <div class="podium-item">
+                    <div class="fw-bold text-truncate">${t1.nomeGrupo}</div>
+                    <small class="text-muted d-block mb-2">${t1.turma}</small>
+                    <div class="podium-bar podium-1">
+                        <span class="fw-bold"><i class="bi bi-trophy-fill text-warning me-1"></i>1º</span>
+                        <span class="fs-4 fw-bold">${t1.pontuacao} pts</span>
+                    </div>
+                </div>
+                <div class="podium-item">
+                    <div class="fw-semibold small text-truncate">${t3.nomeGrupo}</div>
+                    <small class="text-muted d-block mb-2">${t3.turma}</small>
+                    <div class="podium-bar podium-3">
+                        <span class="fw-bold">3º</span>
+                        <span class="fs-6 fw-bold">${t3.pontuacao} pts</span>
+                    </div>
+                </div>
+            `;
+
+        // Gráfico 1: Pontuações por Grupo
+        const ctxG = document.getElementById("graficoGrupos").getContext("2d");
+        if (graficoGruposInstancia) graficoGruposInstancia.destroy();
+        const topGrupos = ordenados.slice(0, 6);
+        graficoGruposInstancia = new Chart(ctxG, {
+          type: "bar",
+          data: {
+            labels: topGrupos.map((g) => g.nomeGrupo),
+            datasets: [
+              {
+                label: "Pontuação",
+                data: topGrupos.map((g) => g.pontuacao),
+                backgroundColor: "#4a154b",
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+          },
+        });
+
+        // Gráfico 2: Acertos por Turma
+        const ctxT = document.getElementById("graficoTurmas").getContext("2d");
+        if (graficoTurmasInstancia) graficoTurmasInstancia.destroy();
+        graficoTurmasInstancia = new Chart(ctxT, {
+          type: "bar",
+          data: {
+            labels: turmasOrdenadas.map((t) => t.turma),
+            datasets: [
+              {
+                label: "Total de Acertos",
+                data: turmasOrdenadas.map((t) => t.acertos),
+                backgroundColor: "#eab308",
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+          },
+        });
+      }
+
+      function resetarHistoricoDemo() {
+        resultadosHistorico = [...RESULTADOS_INICIAIS_DEMO];
+        salvarResultadosStorage();
+        renderizarDashboard();
+        exibirNotificacao("Histórico de demonstração restaurado.");
+      }
+
+      /* ========================================================================
+           6. BANCO DE PERGUNTAS — filter(), find(), map() e push()
+           ======================================================================== */
+      function atualizarListaPerguntas() {
+        const termo = (
+          document.getElementById("input-filtro-personalidade")?.value || ""
+        )
+          .toLowerCase()
+          .trim();
+
+        // Uso de filter() para filtrar por personalidade
+        const filtradas = perguntas.filter(
+          (p) =>
+            p.personalidade.toLowerCase().includes(termo) ||
+            p.pergunta.toLowerCase().includes(termo),
+        );
+
+        document.getElementById("contador-banco-perguntas").textContent =
+          `${filtradas.length} perguntas exibidas`;
+
+        // Uso de map() para transformar objetos em cards HTML
+        const grid = document.getElementById("grid-perguntas");
+        grid.innerHTML = filtradas
+          .map(
+            (q) => `
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 border bg-white h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-light text-dark border">#${q.id}</span>
+                            <span class="badge" style="background-color: var(--bt-primary-soft); color: var(--bt-primary);">${q.personalidade}</span>
+                        </div>
+                        <p class="fw-semibold small mb-2">${q.pergunta}</p>
+                        <div class="small text-success fw-medium mb-1">
+                            <i class="bi bi-check2-circle me-1"></i>${q.alternativas[q.respostaCorreta]}
+                        </div>
+                        <small class="text-muted d-block">${q.explicacao}</small>
+                    </div>
+                </div>
+            `,
+          )
+          .join("");
+      }
+
+      // Uso de find() para localizar pergunta por ID
+      function localizarPerguntaPorId() {
+        const idBusca = Number(document.getElementById("input-busca-id").value);
+        const alerta = document.getElementById("alerta-busca-id");
+
+        if (!idBusca) {
+          alerta.classList.add("d-none");
+          return;
+        }
+
+        const achada = perguntas.find((p) => p.id === idBusca);
+        alerta.classList.remove("d-none");
+
+        if (achada) {
+          alerta.innerHTML = `<strong>ID #${achada.id} (${achada.personalidade}):</strong> ${achada.pergunta}`;
+        } else {
+          alerta.innerHTML = `Nenhuma pergunta encontrada com o ID #${idBusca}.`;
+        }
+      }
+
+      // Uso de push() para cadastrar nova pergunta no localStorage
+      function salvarNovaPergunta() {
+        const personalidade = document
+          .getElementById("form-personalidade")
+          .value.trim();
+        const enunciado = document.getElementById("form-pergunta").value.trim();
+        const alt0 = document.getElementById("form-alt-0").value.trim();
+        const alt1 = document.getElementById("form-alt-1").value.trim();
+        const alt2 = document.getElementById("form-alt-2").value.trim();
+        const alt3 = document.getElementById("form-alt-3").value.trim();
+        const correta = Number(document.getElementById("form-correta").value);
+        const explicacao = document
+          .getElementById("form-explicacao")
+          .value.trim();
+
+        if (
+          !personalidade ||
+          !enunciado ||
+          !alt0 ||
+          !alt1 ||
+          !alt2 ||
+          !alt3 ||
+          !explicacao
+        ) {
+          exibirNotificacao("Preencha todos os campos da pergunta.");
+          return;
+        }
+
+        const novoId =
+          perguntas.length > 0
+            ? Math.max(...perguntas.map((p) => p.id)) + 1
+            : 1;
+        perguntas.push({
+          id: novoId,
+          pergunta: enunciado,
+          alternativas: [alt0, alt1, alt2, alt3],
+          respostaCorreta: correta,
+          personalidade: personalidade,
+          explicacao: explicacao,
+        });
+
+        salvarPerguntasStorage();
+        atualizarListaPerguntas();
+
+        const modalEl = document.getElementById("modalNovaPergunta");
+        const modalInst = bootstrap.Modal.getInstance(modalEl);
+        if (modalInst) modalInst.hide();
+
+        exibirNotificacao(`Pergunta #${novoId} adicionada com sucesso.`);
+      }
+
+      /* ========================================================================
+           7. RELATÓRIO E EXPORTAÇÃO — gerarRelatorio()
+           ======================================================================== */
+      function gerarRelatorio() {
+        const { ordenados, turmasOrdenadas } = obterEstatisticasConsolidadas();
+
+        document.getElementById("relatorio-data").textContent =
+          `Emitido em ${new Date().toLocaleDateString("pt-BR")}`;
+        document.getElementById("rel-melhor-grupo").textContent = ordenados[0]
+          ? `${ordenados[0].nomeGrupo} (${ordenados[0].pontuacao} pts)`
+          : "-";
+        document.getElementById("rel-melhor-turma").textContent =
+          turmasOrdenadas[0]
+            ? `${turmasOrdenadas[0].turma} (${turmasOrdenadas[0].acertos} acertos)`
+            : "-";
+
+        const mediaGeral =
+          resultadosHistorico.length > 0
+            ? Math.round(
+                resultadosHistorico.reduce(
+                  (acc, r) => acc + r.aproveitamento,
+                  0,
+                ) / resultadosHistorico.length,
+              )
+            : 0;
+        document.getElementById("rel-media-geral").textContent =
+          `${mediaGeral}%`;
+
+        const tbody = document.getElementById("tabela-relatorio-corpo");
+        tbody.innerHTML = ordenados
+          .map(
+            (r, i) => `
+                <tr>
+                    <td class="fw-bold">${i + 1}º</td>
+                    <td>${r.nomeGrupo}</td>
+                    <td>${r.turma}</td>
+                    <td class="text-center">${r.acertos}/5</td>
+                    <td class="text-center">${r.aproveitamento}%</td>
+                    <td class="text-center">${r.tempoMedio || "-"}s</td>
+                    <td class="text-end fw-bold">${r.pontuacao} pts</td>
+                </tr>
+            `,
+          )
+          .join("");
+
+        const modalRel = new bootstrap.Modal(
+          document.getElementById("modalRelatorio"),
+        );
+        modalRel.show();
+      }
+
+      function exportarCSV() {
+        const { ordenados } = obterEstatisticasConsolidadas();
+        const cabecalho = [
+          "Posicao",
+          "Grupo",
+          "Turma",
+          "Acertos",
+          "Erros",
+          "Aproveitamento(%)",
+          "TempoMedio(s)",
+          "Pontuacao",
+          "Data",
+        ];
+        const linhas = ordenados.map((r, idx) =>
+          [
+            idx + 1,
+            `"${r.nomeGrupo}"`,
+            `"${r.turma}"`,
+            r.acertos,
+            r.erros,
+            r.aproveitamento,
+            r.tempoMedio || 0,
+            r.pontuacao,
+            `"${r.data}"`,
+          ].join(";"),
+        );
+
+        const csv = "\uFEFF" + [cabecalho.join(";"), ...linhas].join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "relatorio_blacktech_quiz.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      /* ========================================================================
+           8. NAVEGAÇÃO E LIFECYCLE (onMounted)
+           ======================================================================== */
+      function mudarTela(destino) {
+        const telas = ["quiz", "dashboard", "perguntas"];
+        telas.forEach((t) => {
+          document
+            .getElementById(`tela-${t}`)
+            .classList.toggle("d-none", t !== destino);
+          document
+            .getElementById(`nav-${t}`)
+            .classList.toggle("active", t === destino);
+        });
+
+        if (destino === "dashboard") renderizarDashboard();
+        if (destino === "perguntas") atualizarListaPerguntas();
+      }
+
+      // Equivalente ao hook onMounted() do Vue 3
+      window.onload = function () {
+        inicializarLocalStorage();
+        atualizarListaPerguntas();
+      };
+    </script>
+  </body>
+  
+    <!-- ==========================================================================
+         2. CAMADA DE ESTILOS (CSS NO MEIO DO ARQUIVO)
+         FUTURA MIGRAÇÃO VUE.JS:
+         - Variáveis em :root serão migradas para `src/assets/main.css`.
+         - Classes de componentes (.quiz-container, .result-card, .podium-box) irão
+           para blocos `<style scoped>` nos respectivos componentes `.vue`.
+         ========================================================================== -->
+    <style>
+      :root {
+        --bt-primary: #4a154b;
+        --bt-primary-hover: #380f39;
+        --bt-primary-soft: #f3eaf4;
+        --bt-accent: #eab308;
+        --bt-bg: #151111;
+        --bt-surface: #bcb8b8;
+        --bt-text: #1f2937;
+        --bt-muted: #6b7280;
+        --bt-border: #e5e7eb;
+        --bt-success: #10b981;
+        --bt-danger: #ef4444;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bt-bg);
+        color: var(--bt-text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Navbar Clean */
+      .app-navbar {
+        background-color: var(--bt-surface);
+        border-bottom: 1px solid var(--bt-border);
+      }
+
+      .brand-logo {
+        width: 36px;
+        height: 36px;
+        background-color: var(--bt-primary);
+        color: #fff;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+      }
+
+      .nav-pills .nav-link {
+        color: var(--bt-muted);
+        font-weight: 500;
+        font-size: 0.92rem;
+        border-radius: 8px;
+        padding: 0.5rem 0.9rem;
+        transition: all 0.15s ease;
+      }
+
+      .nav-pills .nav-link:hover {
+        color: var(--bt-primary);
+        background-color: var(--bt-primary-soft);
+      }
+
+      .nav-pills .nav-link.active {
+        background-color: var(--bt-primary);
+        color: #fff;
+      }
+
+      /* Botão Primário Roxo */
+      .btn-bt-primary {
+        background-color: var(--bt-primary);
+        color: #fff;
+        border: none;
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 0.7rem 1.25rem;
+        transition:
+          background-color 0.15s ease,
+          transform 0.1s ease;
+      }
+
+      .btn-bt-primary:hover {
+        background-color: var(--bt-primary-hover);
+        color: #fff;
+      }
+
+      /* Card Centralizado do Quiz */
+      .quiz-wrapper {
+        max-width: 650px;
+        margin: 0 auto;
+      }
+
+      .clean-card {
+        background: var(--bt-surface);
+        border: 1px solid var(--bt-border);
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      }
+
+      /* Botões de Alternativas Limpos (1 a 4) */
+      .option-item {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        text-align: left;
+        padding: 0.95rem 1.15rem;
+        border: 1.5px solid var(--bt-border);
+        border-radius: 12px;
+        background: var(--bt-surface);
+        color: var(--bt-text);
+        font-weight: 500;
+        margin-bottom: 0.65rem;
+        transition: all 0.15s ease;
+      }
+
+      .option-item:hover:not(:disabled) {
+        border-color: var(--bt-primary);
+        background-color: var(--bt-primary-soft);
+      }
+
+      .option-badge {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        border-radius: 8px;
+        background-color: var(--bt-bg);
+        border: 1px solid var(--bt-border);
+        color: var(--bt-primary);
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.9rem;
+        font-size: 0.9rem;
+      }
+
+      .option-item.is-correct {
+        border-color: var(--bt-success) !important;
+        background-color: #ecfdf5 !important;
+        color: #065f46 !important;
+      }
+
+      .option-item.is-correct .option-badge {
+        background-color: var(--bt-success);
+        border-color: var(--bt-success);
+        color: #fff;
+      }
+
+      .option-item.is-wrong {
+        border-color: var(--bt-danger) !important;
+        background-color: #fef2f2 !important;
+        color: #991b1b !important;
+      }
+
+      .option-item.is-wrong .option-badge {
+        background-color: var(--bt-danger);
+        border-color: var(--bt-danger);
+        color: #fff;
+      }
+
+      /* Card de Resultado Final (Layout da Página 6 do PDF) */
+      .final-result-card {
+        max-width: 560px;
+        margin: 0 auto;
+        background: var(--bt-surface);
+        border: 2px solid #27272a;
+        border-radius: 18px;
+        overflow: hidden;
+      }
+
+      .final-result-header {
+        border-bottom: 2px solid #27272a;
+        padding: 0.95rem 1.25rem;
+        text-align: center;
+        font-weight: 800;
+        font-size: 1.15rem;
+        background: #fafafa;
+      }
+
+      .seal-container {
+        position: relative;
+        width: 175px;
+        height: 175px;
+        margin: 1.25rem auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .seal-outer {
+        width: 162px;
+        height: 162px;
+        border-radius: 50%;
+        background: #18181b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 0 6px var(--bt-primary-soft);
+      }
+
+      .seal-inner {
+        width: 136px;
+        height: 136px;
+        border-radius: 50%;
+        background: var(--bt-primary);
+        border: 3px solid #fff;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding-bottom: 12px;
+      }
+
+      .seal-points {
+        font-size: 2.35rem;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .seal-label {
+        font-size: 1rem;
+        font-weight: 500;
+      }
+
+      .seal-ribbon {
+        position: absolute;
+        bottom: 10px;
+        background: var(--bt-primary);
+        color: #fff;
+        border: 1.5px solid #fff;
+        padding: 0.2rem 0.95rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 4px;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+      }
+
+      .outlined-box {
+        border: 1.5px solid #27272a;
+        border-radius: 12px;
+        padding: 0.85rem 1.1rem;
+      }
+
+      .quote-box {
+        position: relative;
+        border: 1.5px solid #27272a;
+        border-radius: 12px;
+        padding: 1.25rem 1.35rem;
+        margin-top: 1.35rem;
+      }
+
+      .quote-symbol-top,
+      .quote-symbol-bottom {
+        position: absolute;
+        background: #fff;
+        padding: 0 6px;
+        font-size: 1.85rem;
+        line-height: 1;
+        color: var(--bt-primary);
+        font-family: Georgia, serif;
+        font-weight: bold;
+      }
+
+      .quote-symbol-top {
+        top: -16px;
+        left: 14px;
+      }
+
+      .quote-symbol-bottom {
+        bottom: -22px;
+        right: 14px;
+      }
+
+      /* Pódio Minimalista */
+      .podium-grid {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 1rem;
+        min-height: 230px;
+        padding-top: 1rem;
+      }
+
+      .podium-item {
+        flex: 1;
+        max-width: 190px;
+        text-align: center;
+      }
+
+      .podium-bar {
+        border-radius: 12px 12px 6px 6px;
+        padding: 1rem 0.65rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        color: #fff;
+      }
+
+      .podium-1 {
+        min-height: 175px;
+        background-color: var(--bt-primary);
+      }
+
+      .podium-2 {
+        min-height: 140px;
+        background-color: #6b7280;
+      }
+
+      .podium-3 {
+        min-height: 115px;
+        background-color: #9ca3af;
+      }
+
+      /* Impressão Limpa */
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+        body {
+          background: #fff;
+        }
+        .clean-card {
+          border: none;
+          box-shadow: none;
+        }
+      }
+    </style>
+</html>
